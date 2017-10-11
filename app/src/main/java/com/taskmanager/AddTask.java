@@ -10,7 +10,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 public class AddTask extends AppCompatActivity {
-
+//code change
     EditText task,details,summary;
     Button save;
     ArrayList<TaskItem> aTask=new ArrayList<TaskItem>();
