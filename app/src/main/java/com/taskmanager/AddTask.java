@@ -7,12 +7,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.taskmanager.database.TaskDbhelper;
+
 public class AddTask extends AppCompatActivity {
 //code change
     EditText task,details,summary;
     Button save;
-    public static String sTask="",sDetail="",sSummary="";
-
+    public static String sTask="",sDetail="",sSummary="",sTaskID="";
+    TaskDbhelper dbhelper=new TaskDbhelper(AddTask.this);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,12 +33,26 @@ public class AddTask extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                TaskItem tItem=new TaskItem();
+                if(sTaskID.equals("")) {
+                    dbhelper.AddTasks(task.getText().toString(), details.getText().toString(), summary.getText().toString());
+                    sTaskID="";
+                    sTask="";
+                    sDetail="";
+                    sSummary="";
+                }else{
+                    dbhelper.UpdateTask(sTaskID,task.getText().toString(), details.getText().toString(), summary.getText().toString());
+                    sTaskID="";
+                    sTask="";
+                    sDetail="";
+                    sSummary="";
+                }
+                /*TaskItem tItem=new TaskItem();
 
                 tItem.Task=task.getText().toString();
                 tItem.Details=details.getText().toString();
                 tItem.Summary=summary.getText().toString();
-                TaskListActivity.aTask.add(tItem);
+                TaskListActivity.aTask.add(tItem);*/
+
                 Toast.makeText(AddTask.this,"Succesfully saved",Toast.LENGTH_LONG).show();
                 task.setText("");
                 details.setText("");
@@ -47,5 +63,14 @@ public class AddTask extends AppCompatActivity {
         });
 
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        sTaskID="";
+        sTask="";
+        sDetail="";
+        sSummary="";
+        super.onBackPressed();
     }
 }

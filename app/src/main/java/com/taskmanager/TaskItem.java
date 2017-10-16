@@ -9,4 +9,5 @@ public class TaskItem {
     String Details;
     String Summary;
 
+    String taskId;
 }
