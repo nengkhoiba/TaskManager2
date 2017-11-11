@@ -3,7 +3,7 @@ package com.taskmanager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -16,10 +16,21 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.taskmanager.database.TaskDbhelper;
+import com.taskmanager.webservice.DataUrls;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class TaskListActivity extends AppCompatActivity {
@@ -27,11 +38,13 @@ public class TaskListActivity extends AppCompatActivity {
     TaskListAdapter adapter;
     ListView list;
     TaskDbhelper dbhelper=new TaskDbhelper(TaskListActivity.this);
+    ProgressBar progress;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task_list);
         list=(ListView) findViewById(R.id.listViewTask);
+        progress=(ProgressBar) findViewById(R.id.progressBar);
         //populateTaskList(aTask);
 
 
@@ -43,50 +56,88 @@ public class TaskListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-            aTask=new ArrayList<TaskItem>();
-
-        Cursor disCur = dbhelper.getTasks();
-
-        disCur.moveToFirst();
-        while (!disCur.isAfterLast()) {
-            TaskItem tItem=new TaskItem();
-            tItem.taskId = disCur.getString(0);
-            tItem.Task = disCur.getString(1);
-            tItem.Details = disCur.getString(2);
-            tItem.Summary = disCur.getString(3);
-
-            aTask.add(tItem);
-
-            disCur.moveToNext();
-
-        }
-        populateTaskList(aTask);
-
+        new AsyncHttpTask().execute(DataUrls.GetNews);
     }
 
-    public  void repolupate(){
-        aTask=new ArrayList<TaskItem>();
 
-        Cursor disCur = dbhelper.getTasks();
+    public class AsyncHttpTask extends AsyncTask<String, Void, Integer> {
 
-        disCur.moveToFirst();
-        while (!disCur.isAfterLast()) {
-            TaskItem tItem=new TaskItem();
-            tItem.taskId = disCur.getString(0);
-            tItem.Task = disCur.getString(1);
-            tItem.Details = disCur.getString(2);
-            tItem.Summary = disCur.getString(3);
-
-            aTask.add(tItem);
-
-            disCur.moveToNext();
+        @Override
+        protected void onPreExecute() {
+            list.setVisibility(View.INVISIBLE);
+            progress.setVisibility(View.VISIBLE);
+            setProgressBarIndeterminateVisibility(true);
 
         }
-        adapter = new TaskListAdapter(TaskListActivity.this,aTask);
-        adapter.notifyDataSetInvalidated();
 
-        list.setAdapter(adapter);
+        @Override
+        protected Integer doInBackground(String... params) {
+            Integer result = 0;
+            HttpURLConnection urlConnection;
+            try {
+                URL url = new URL(params[0]);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                int statusCode = urlConnection.getResponseCode();
 
+                // 200 represents HTTP OK
+                if (statusCode == 200) {
+                    BufferedReader r = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        response.append(line);
+                    }
+                    parseResult(response.toString());
+                    Log.d("-----------------------",url.toString());
+                    Log.d("-----------------------",response.toString());
+                    result = 1; // Successful
+                } else {
+                    result = 0; //"Failed to fetch data!";
+                }
+            } catch (Exception e) {
+                Log.d("-----------------------","EROROROROROOR");
+                // Log.d(TAG, e.getLocalizedMessage());
+            }
+            return result; //"Failed to fetch data!";
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            // Download complete. Let us update UI
+            list.setVisibility(View.VISIBLE);
+            progress.setVisibility(View.INVISIBLE);
+            if (result == 1) {
+
+                populateTaskList(aTask);
+            } else {
+
+
+                Toast.makeText(TaskListActivity.this, "Failed to fetch data!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private void parseResult(String result) {
+        try {
+            Log.d("-----------------------",result);
+            JSONObject response = new JSONObject(result);
+            JSONArray posts = response.optJSONArray("news");
+            aTask=new ArrayList<TaskItem>();
+            for (int i = 0; i < posts.length(); i++) {
+                JSONObject post = posts.optJSONObject(i);
+
+
+                TaskItem tItem=new TaskItem();
+                tItem.taskId = post.optString("title");
+                tItem.Task = post.optString("title");
+                tItem.Details = post.optString("image");
+                tItem.Summary = post.optString("body");
+
+                aTask.add(tItem);
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -228,8 +279,6 @@ public class TaskListActivity extends AppCompatActivity {
 
                     public void onClick(DialogInterface dialog, int which) {
 
-                        dbhelper.deleteTaskByID(ID.getText().toString());
-                        repolupate();
 
                     }
 

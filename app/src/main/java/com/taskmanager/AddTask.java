@@ -8,8 +8,10 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.taskmanager.database.TaskDbhelper;
+import com.taskmanager.webservice.AsyncPublish;
+import com.taskmanager.webservice.DataUrls;
 
-public class AddTask extends AppCompatActivity {
+public class AddTask extends AppCompatActivity implements AsyncPublish.Publishtask {
 //code change
     EditText task,details,summary;
     Button save;
@@ -33,31 +35,10 @@ public class AddTask extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                if(sTaskID.equals("")) {
-                    dbhelper.AddTasks(task.getText().toString(), details.getText().toString(), summary.getText().toString());
-                    sTaskID="";
-                    sTask="";
-                    sDetail="";
-                    sSummary="";
-                }else{
-                    dbhelper.UpdateTask(sTaskID,task.getText().toString(), details.getText().toString(), summary.getText().toString());
-                    sTaskID="";
-                    sTask="";
-                    sDetail="";
-                    sSummary="";
-                }
-                /*TaskItem tItem=new TaskItem();
 
-                tItem.Task=task.getText().toString();
-                tItem.Details=details.getText().toString();
-                tItem.Summary=summary.getText().toString();
-                TaskListActivity.aTask.add(tItem);*/
+                new AsyncPublish(AddTask.this, DataUrls.AddNews+task.getText().toString()+"&body="+summary.getText().toString()+"&image="+details.getText().toString()+"&posted_by=1",AddTask.this)
+                        .execute();
 
-                Toast.makeText(AddTask.this,"Succesfully saved",Toast.LENGTH_LONG).show();
-                task.setText("");
-                details.setText("");
-                summary.setText("");
-                finish();
 
             }
         });
@@ -72,5 +53,20 @@ public class AddTask extends AppCompatActivity {
         sDetail="";
         sSummary="";
         super.onBackPressed();
+    }
+
+    @Override
+    public void PublishtaskSuccess(String info) {
+        Toast.makeText(AddTask.this,"Succesfully saved",Toast.LENGTH_LONG).show();
+        task.setText("");
+        details.setText("");
+        summary.setText("");
+        finish();
+    }
+
+    @Override
+    public void PublishtaskFailed(String info) {
+        Toast.makeText(AddTask.this,"Fail to add!",Toast.LENGTH_LONG).show();
+
     }
 }
