@@ -11,7 +11,6 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.taskmanager.database.TaskDbhelper;
-import com.taskmanager.webservice.AsyncPublish;
 import com.taskmanager.webservice.DataUrls;
 
 import org.json.JSONException;
@@ -22,12 +21,12 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class AddTask extends AppCompatActivity implements AsyncPublish.Publishtask {
+public class AddTask extends AppCompatActivity {
 //code change
     EditText task,details,summary;
     Button save;
     private ProgressDialog dialog;
-    public static String sTask="",sDetail="",sSummary="",sTaskID="";
+    public static String sTask="",sDetail="",sSummary="",sTaskID="0";
     TaskDbhelper dbhelper=new TaskDbhelper(AddTask.this);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +45,7 @@ public class AddTask extends AppCompatActivity implements AsyncPublish.Publishta
         save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String url=DataUrls.AddNews+task.getText().toString()+"&body="+summary.getText().toString()+"&image="+details.getText().toString()+"&posted_by=1";
+                String url=DataUrls.AddTasks+sTaskID+"&title="+task.getText().toString()+"&desc="+details.getText().toString()+"&summary="+summary.getText().toString();
                 new AsyncHttpTask().execute(url);
 
 
@@ -69,7 +68,10 @@ public class AddTask extends AppCompatActivity implements AsyncPublish.Publishta
             Integer result = 0;
             HttpURLConnection urlConnection;
             try {
-                URL url = new URL(params[0]);
+                String surl = params[0].toString();
+                surl = surl.replaceAll ( "\n", "%0D%0A" );
+                surl = surl.replaceAll ( " ", "%20" );
+                URL url = new URL(surl);
                 urlConnection = (HttpURLConnection) url.openConnection();
                 int statusCode = urlConnection.getResponseCode();
 
@@ -103,6 +105,10 @@ public class AddTask extends AppCompatActivity implements AsyncPublish.Publishta
             }
             if (result == 1) {
                 Toast.makeText(AddTask.this, "Success", Toast.LENGTH_SHORT).show();
+                sTaskID="0";
+                sTask="";
+                sDetail="";
+                sSummary="";
                 finish();
 
             } else {
@@ -133,25 +139,12 @@ public class AddTask extends AppCompatActivity implements AsyncPublish.Publishta
     }
     @Override
     public void onBackPressed() {
-        sTaskID="";
+        sTaskID="0";
         sTask="";
         sDetail="";
         sSummary="";
         super.onBackPressed();
     }
 
-    @Override
-    public void PublishtaskSuccess(String info) {
-        Toast.makeText(AddTask.this,"Succesfully saved",Toast.LENGTH_LONG).show();
-        task.setText("");
-        details.setText("");
-        summary.setText("");
-        finish();
-    }
 
-    @Override
-    public void PublishtaskFailed(String info) {
-        Toast.makeText(AddTask.this,"Fail to add!",Toast.LENGTH_LONG).show();
-
-    }
 }

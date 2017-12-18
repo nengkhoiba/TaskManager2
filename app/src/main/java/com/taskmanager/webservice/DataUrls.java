@@ -6,8 +6,8 @@ package com.taskmanager.webservice;
 public class DataUrls {
     static public String ServerUrl = "http://www.qnews.co.in/";
 
-    static final public String GetNews = ServerUrl+"getNews.php";
-    static final public String AddNews = ServerUrl+"addNews.php?cat_id=8&title=";
-
+    static final public String GetTask = ServerUrl+"getTask.php?p=";
+    static final public String AddTasks = ServerUrl+"addTask.php?ID=";
+    static final public String DeleteTask = ServerUrl+"deleteTask.php?ID=";
 
 }

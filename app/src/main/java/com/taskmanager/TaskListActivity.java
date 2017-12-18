@@ -1,5 +1,6 @@
 package com.taskmanager;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -37,6 +38,7 @@ public class TaskListActivity extends AppCompatActivity {
     ArrayList<TaskItem> aTask;
     TaskListAdapter adapter;
     ListView list;
+    private ProgressDialog dialog;
     TaskDbhelper dbhelper=new TaskDbhelper(TaskListActivity.this);
     ProgressBar progress;
     @Override
@@ -56,7 +58,7 @@ public class TaskListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        new AsyncHttpTask().execute(DataUrls.GetNews);
+        new AsyncHttpTask().execute(DataUrls.GetTask+1);
     }
 
 
@@ -120,17 +122,17 @@ public class TaskListActivity extends AppCompatActivity {
         try {
             Log.d("-----------------------",result);
             JSONObject response = new JSONObject(result);
-            JSONArray posts = response.optJSONArray("news");
+            JSONArray posts = response.optJSONArray("task");
             aTask=new ArrayList<TaskItem>();
             for (int i = 0; i < posts.length(); i++) {
                 JSONObject post = posts.optJSONObject(i);
 
 
                 TaskItem tItem=new TaskItem();
-                tItem.taskId = post.optString("title");
+                tItem.taskId = post.optString("id");
                 tItem.Task = post.optString("title");
-                tItem.Details = post.optString("image");
-                tItem.Summary = post.optString("body");
+                tItem.Details = post.optString("discription");
+                tItem.Summary = post.optString("summary");
 
                 aTask.add(tItem);
             }
@@ -279,7 +281,7 @@ public class TaskListActivity extends AppCompatActivity {
 
                     public void onClick(DialogInterface dialog, int which) {
 
-
+                        new AsyncHttpTaskDelete().execute(DataUrls.DeleteTask+ID.getText().toString());
                     }
 
                 });
@@ -299,5 +301,83 @@ public class TaskListActivity extends AppCompatActivity {
             }
         });
 
+    }
+    public class AsyncHttpTaskDelete extends AsyncTask<String, Void, Integer> {
+
+        @Override
+        protected void onPreExecute() {
+            dialog = ProgressDialog.show(TaskListActivity.this, null, "Please wait...", true, false);
+
+        }
+
+        @Override
+        protected Integer doInBackground(String... params) {
+            Integer result = 0;
+            HttpURLConnection urlConnection;
+            try {
+                String surl = params[0].toString();
+                surl = surl.replaceAll ( "\n", "%0D%0A" );
+                surl = surl.replaceAll ( " ", "%20" );
+                URL url = new URL(surl);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                int statusCode = urlConnection.getResponseCode();
+
+                // 200 represents HTTP OK
+                if (statusCode == 200) {
+                    BufferedReader r = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        response.append(line);
+                    }
+                    int rtrn=processdata(response.toString());
+                    Log.d("-----------------------",url.toString());
+                    Log.d("-----------------------",response.toString());
+                    result = rtrn; // Successful
+                } else {
+                    result = 0; //"Failed to fetch data!";
+                }
+            } catch (Exception e) {
+                Log.d("-----------------------","EROROROROROOR");
+                // Log.d(TAG, e.getLocalizedMessage());
+            }
+            return result; //"Failed to fetch data!";
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            // Download complete. Let us update UI
+            if (dialog != null && dialog.isShowing()) {
+                dialog.dismiss();
+            }
+            if (result == 1) {
+
+                new AsyncHttpTask().execute(DataUrls.GetTask+1);
+
+            } else {
+
+
+                Toast.makeText(TaskListActivity.this, "Failed to fetch data!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    public int processdata(String result){
+        int rtrn=0;
+        try {
+            JSONObject response = new JSONObject(result);
+            String status=response.optString("status");
+            if(status.equals("success")){
+                rtrn=1;
+            }else{
+                rtrn=0;
+            }
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        return rtrn;
     }
 }
